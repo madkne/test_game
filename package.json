@@ -1,0 +1,28 @@
+{
+    "name": "threejs-typescript",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "rm -rdf dist;concurrently \"webpack watch\" \"http-server . -p 8800 -s -c-1\""
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/dat.gui": "^0.7.7",
+        "@types/three": "^0.140.0",
+        "concurrently": "^7.3.0",
+        "http-server": "^14.1.1",
+        "ts-loader": "^9.3.0",
+        "ts-node": "^10.7.0",
+        "webpack": "^5.72.0",
+        "webpack-cli": "^4.9.2"
+    },
+    "dependencies": {
+        "dat.gui": "^0.7.9",
+        "three": "^0.140.0",
+        "three-fbxloader-offical": "^1.0.0"
+    }
+}

@@ -1,0 +1,4 @@
+node_modules
+assets/unused
+dist
+package-lock.json

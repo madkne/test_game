@@ -1,15 +1,19 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
-        "target": "es2016",
+        "module": "CommonJS",
+        "target": "es6",
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
         "sourceMap": true, // Added
         "noImplicitAny": false, // Added
         "moduleResolution": "node", // Added
+        "outDir": "./dist", // Added
         "strict": false,
         "allowJs": true,
+        "types": [
+            "node"
+        ],
         "allowUnreachableCode": true,
         "noImplicitThis": false,
         "checkJs": false,
@@ -21,6 +25,7 @@
     ], // Added
     "exclude": [
         "node_modules",
-        "server"
+        "dist",
+        "db"
     ] // Added
 }

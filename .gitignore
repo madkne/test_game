@@ -2,3 +2,7 @@ node_modules
 assets/unused
 dist
 package-lock.json
+old
+public/webpack
+server/dist
+public/assets/unused

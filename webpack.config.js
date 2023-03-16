@@ -3,7 +3,7 @@ module.exports = {
     mode: 'none',
     entry: './src/index.ts',
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'public', 'webpack'),
         filename: 'main.js'
     },
     devtool: "source-map", // this is a key point, this option makes browser catch breakpoints faster than "inline-source-map"

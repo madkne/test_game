@@ -9,6 +9,7 @@ import { TransformControls } from './jsm/controls/TransformControls.js';
 import { GameGUI } from './gui';
 import axios from 'axios';
 import { ObjectManagement } from './ObjectManagement';
+import { BoxGeometry, MeshBasicMaterial } from 'three';
 
 
 export class ZoneParserClass {
@@ -19,6 +20,7 @@ export class ZoneParserClass {
     protected objManage: ObjectManagement;
     protected gridHelper: THREE.GridHelper;
     protected groundY: number;
+    protected squareMeterLength: number;
 
     protected transformControl: TransformControls;
     protected transformControlObject;
@@ -26,8 +28,9 @@ export class ZoneParserClass {
     protected editingObject = false;
     protected creatingObject = false;
     protected gui: GameGUI;
-    protected pointer: { x: number, y: number } = { x: 0, y: 0 };
+    protected pointer: THREE.Vector2;
     protected raycaster: THREE.Raycaster;
+    protected mouseRaycaster: THREE.Raycaster;
     protected canSelectObject: any;
     protected canSelectObjectIndex: number;
     protected floor: THREE.Mesh;
@@ -43,8 +46,11 @@ export class ZoneParserClass {
     async init() {
         this.gui = new GameGUI();
         this.raycaster = new THREE.Raycaster();
+        this.pointer = new THREE.Vector2();
         await this.fetchZoneInfo();
-        console.log('zone:', this.zone)
+        // =>calc squareMeterLength
+        this.squareMeterLength = Number((this.zone.meta.ground.width / this.zone.meta.ground.height).toFixed(1));
+        console.log('zone:', this.zone, this.squareMeterLength)
         this._initTransformControl();
         this.initGround();
         this.initSky();
@@ -58,17 +64,19 @@ export class ZoneParserClass {
         this.mode = mode;
         // =>remove edit mode fields
         this.gui.removeElementsByGroup('edit_mode');
+        this._resetSelectedObject();
         // =>remove create mode fields
         this.gui.removeElementsByGroup('create_mode');
         // =>disable grid
         if (this.gridHelper) {
             this.gridHelper.removeFromParent();
         }
+        this.mouseRaycaster = new THREE.Raycaster();
 
         // =>if edit mode
         if (this.mode === 'edit') {
             // =>create search input
-            this.gui.addInput('obj_search_input', 'select object by name ...').position({ top: '10px', 'left': '10px' }).setGroup('edit_mode').enterKeyEvent(() => {
+            this.gui.addTextInput('obj_search_input', 'select object by name ...').position({ top: '10px', 'left': '10px' }).setGroup('edit_mode').enterKeyEvent(() => {
                 for (let i = 0; i < this.objManage.objects.length; i++) {
                     if (this.objManage.objects[i].name === this.gui.findById('obj_search_input').value()) {
                         this._selectObjectByIndex(i);
@@ -83,23 +91,23 @@ export class ZoneParserClass {
         // =>if create mode
         else if (this.mode === 'create') {
             // =>create type select
-            this.gui.addSelect('obj_type_select', this.objManage.objectTypes, 'select object type ').position({ top: '10px', 'left': '10px' }).setGroup('create_mode');
-            // =>create texture select
-            this.gui.addSelect('obj_texture_select', this.objManage.objectTextures, 'select object texture ').position({ top: '30px', 'left': '10px' }).setGroup('create_mode');
+            this.gui.addSelect('obj_type_select', this.objManage.objectNames, 'select object ').position({ top: '10px', 'left': '10px' }).setGroup('create_mode');
+            // =>create type select
+            this.gui.addCheckbox('multi_obj_create_check', 'can create multiple objects', true).position({ top: '30px', 'left': '10px' }).setGroup('create_mode');
             // =>create create button
             this.gui.addButton('obj_create_button', 'create object').setGroup('create_mode').position({ top: '80px', left: '10px' }).clickEvent(() => {
                 this.creatingObject = true;
             });
             // =>enable grid
-            this.gridHelper = new THREE.GridHelper(this.zone.meta.ground.width, this.zone.meta.ground.width / this.zone.meta.ground.minScaler);
+            this.gridHelper = new THREE.GridHelper(this.zone.meta.ground.width, this.zone.meta.ground.width / this.squareMeterLength, 'red', 'blue');
             this.gridHelper.position.setY(this.groundY);
             this.scene.add(this.gridHelper);
         }
     }
     /************************************** */
     async animate() {
-        // =>if edit mode, hover an object
-        if (this.mode === 'edit' && !this.editingObject) {
+        // =>if edit /delete mode, hover an object
+        if ((this.mode === 'edit' || this.mode === 'delete') && !this.editingObject) {
             // find intersections
 
             this.raycaster.setFromCamera(this.pointer, this.scene.camera);
@@ -121,11 +129,7 @@ export class ZoneParserClass {
                 }
 
             } else {
-
-                if (this.canSelectObject) this.canSelectObject.material.color.setHex(this.canSelectObject.currentHex);
-
-                this.canSelectObject = undefined;
-
+                this._resetSelectedObject();
             }
         }
     }
@@ -135,25 +139,25 @@ export class ZoneParserClass {
     protected initEvents() {
         // =>lsiten on global mouse move
         window.addEventListener('mousemove', (e) => {
-            this.pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-            this.pointer.y = - (e.clientY / window.innerHeight) * 2 + 1;
+            this.pointer.set((e.clientX / window.innerWidth) * 2 - 1, - (e.clientY / window.innerHeight) * 2 + 1);
 
             // =>if creating a object
             if (this.mode === 'create' && this.creatingObject) {
                 if (!this.createObjectPlaceholder) {
-                    this.createObjectPlaceholder = this.objManage.generateObjectPlaceholder(this.zone, this.gui.findById('obj_type_select').value('wall'));
+                    this.createObjectPlaceholder = this.objManage.generateObjectPlaceholder(this.zone, this.gui.findById('obj_type_select').value());
+                    if (!this.createObjectPlaceholder) return;
                     this.scene.add(this.createObjectPlaceholder);
                 }
 
 
-                this.raycaster.setFromCamera(this.pointer, this.scene.camera);
+                this.mouseRaycaster.setFromCamera(this.pointer, this.scene.camera);
 
-                const intersects = this.raycaster.intersectObjects([this.floor, ...this.objManage.objects], false);
+                const intersects = this.mouseRaycaster.intersectObjects([this.floor, ...this.objManage.objects], false);
 
                 if (intersects.length > 0) {
                     const intersect = intersects[0];
                     this.createObjectPlaceholder.position.copy(intersect.point).add(intersect.face.normal);
-                    // this.createObjectPlaceholder.position.addScalar(this.zone.meta.ground.minScaler / 2);
+                    this.createObjectPlaceholder.position.divideScalar(this.squareMeterLength).floor().multiplyScalar(this.squareMeterLength).addScalar(this.squareMeterLength);
 
                     this.scene.renderer.render(this.scene, this.scene.camera);
                 }
@@ -176,15 +180,25 @@ export class ZoneParserClass {
                 this.editingObject = false;
                 this.scene.controls.enableRotate = true;
             }
+            // =>if delete mode, select an object
+            if (this.mode === 'delete' && this.canSelectObject) {
+                this._deleteObjectByIndex(this.canSelectObjectIndex);
+            }
             // =>if create mode to create a object
             else if (this.mode === 'create' && this.creatingObject && e.button === 0) {
-                this.raycaster.setFromCamera(this.pointer, this.scene.camera);
+                this.mouseRaycaster.setFromCamera(this.pointer, this.scene.camera);
 
-                const intersects = this.raycaster.intersectObjects([this.floor, ...this.objManage.objects], false);
+                const intersects = this.mouseRaycaster.intersectObjects([this.floor, ...this.objManage.objects], false);
 
                 if (intersects.length > 0) {
                     const intersect = intersects[0];
-                    this._createObject(intersect.point.x, intersect.point.y, intersect.point.z);
+                    console.log('intersects', intersects)
+                    // =>create sample object to find correct position
+                    const newObjectSample = new THREE.Mesh(new BoxGeometry(), new MeshBasicMaterial());
+                    newObjectSample.position.copy(intersect.point).add(intersect.face.normal);
+                    newObjectSample.position.divideScalar(this.squareMeterLength).floor().multiplyScalar(this.squareMeterLength).addScalar(this.squareMeterLength);
+                    // =>create new object
+                    this._createObject(newObjectSample.position.x, newObjectSample.position.y, newObjectSample.position.z);
                 }
             }
             // =>if cancel creating object
@@ -254,7 +268,7 @@ export class ZoneParserClass {
         // const sunLight = new THREE.DirectionalLight(0xaabbff, 0.3);
         const sunLight = new THREE.HemisphereLight(0xddeeff, 0x0f0e0d, 0.02);
         sunLight.position.x = 0;
-        sunLight.position.y = 250;
+        sunLight.position.y = 20;
         sunLight.position.z = 0;
         // sunLight['power'] = 3500 // 3500 lm (300W)
         sunLight.intensity = 3.0; // (City Twilight)
@@ -270,6 +284,11 @@ export class ZoneParserClass {
 
             sun.setFromSphericalCoords(1, phi, theta);
 
+            sunLight.position.x = sun.x;
+            sunLight.position.y = sun.y;
+            sunLight.position.z = sun.z;
+            // sunMesh.position.set(sunLight.position.x, sunLight.position.y, sunLight.position.z);
+
             sky.material['uniforms']['sunPosition'].value.copy(sun);
             // water.material.uniforms['sunDirection'].value.copy(sun).normalize();
 
@@ -280,8 +299,11 @@ export class ZoneParserClass {
             this.scene.environment = renderTarget.texture;
 
         }
-
         updateSun();
+        // setInterval(() => {
+        //     parameters.azimuth--;
+        //     updateSun();
+        // }, 300)
 
 
     }
@@ -312,61 +334,49 @@ export class ZoneParserClass {
 
         window.addEventListener('keydown', (event) => {
             if (this.mode !== 'edit') return;
-            switch (event.keyCode) {
+            switch (event.key.toLowerCase()) {
 
-                case 81: // Q
+                case 'q': // Q
                     this.transformControl.setSpace(this.transformControl.space === 'local' ? 'world' : 'local');
                     break;
 
-                case 16: // Shift
-                    this.transformControl.setTranslationSnap(100);
+                case 'n': // snap
+                    this.transformControl.setTranslationSnap(this.squareMeterLength);
                     this.transformControl.setRotationSnap(THREE.MathUtils.degToRad(15));
-                    this.transformControl.setScaleSnap(0.25);
+                    this.transformControl.setScaleSnap(this.squareMeterLength);
                     break;
 
-                case 87: // W
+                case 't': // translate
                     this.transformControl.setMode('translate');
                     break;
 
-                case 69: // E
+                case 'r': // rotate
                     this.transformControl.setMode('rotate');
                     break;
 
-                case 82: // R
+                case 's': // scale
                     this.transformControl.setMode('scale');
                     break;
 
 
 
-                case 187:
-                case 107: // +, =, num+
+                case '+': // increase size of control
                     this.transformControl.setSize(this.transformControl.size + 0.1);
                     break;
 
-                case 189:
-                case 109: // -, _, num-
+                case '-': // decrease size of control
                     this.transformControl.setSize(Math.max(this.transformControl.size - 0.1, 0.1));
                     break;
 
-                case 88: // X
-                    this.transformControl['showX'] = !this.transformControl['showX'];
-                    break;
 
-                case 89: // Y
-                    this.transformControl['showY'] = !this.transformControl['showY'];
-                    break;
 
-                case 90: // Z
-                    this.transformControl['showZ'] = !this.transformControl['showZ'];
-                    break;
+                // case 32: // Spacebar
+                //     this.transformControl['enabled'] = !this.transformControl['enabled'];
+                //     break;
 
-                case 32: // Spacebar
-                    this.transformControl['enabled'] = !this.transformControl['enabled'];
-                    break;
-
-                case 27: // Esc
-                    this.transformControl.reset();
-                    break;
+                // case 27: // Esc
+                //     this.transformControl.reset();
+                //     break;
 
             }
 
@@ -374,9 +384,9 @@ export class ZoneParserClass {
 
         window.addEventListener('keyup', (event) => {
 
-            switch (event.keyCode) {
+            switch (event.key.toLowerCase()) {
 
-                case 16: // Shift
+                case 'n': // snap
                     this.transformControl.setTranslationSnap(null);
                     this.transformControl.setRotationSnap(null);
                     this.transformControl.setScaleSnap(null);
@@ -392,11 +402,30 @@ export class ZoneParserClass {
         this.transformControlObjectIndex = index;
         this.editingObject = true;
         this.scene.controls.enableRotate = false;
+        this._resetSelectedObject();
+    }
+    /************************************** */
+    private async _deleteObjectByIndex(index: number) {
+        let obj = this.objManage.objects[index];
+        if (await confirm(`Are you sure to delete '${obj.name}' object?`)) {
+            this.objManage.removeObjectByIndex(index);
+            // =>remove object from zone
+            let objIndex = this.zone.objects.findIndex(i => i.name === obj.name);
+            if (objIndex > -1) {
+                this.zone.objects.splice(objIndex, 1);
+            }
+            this._saveZone();
+        }
+        this._resetSelectedObject();
+    }
+    /************************************** */
+    private _resetSelectedObject() {
         if (this.canSelectObject) {
             this.canSelectObject.material.color.setHex(this.canSelectObject.currentHex);
-            this.canSelectObjectIndex = undefined;
-            this.canSelectObject = undefined;
         }
+
+        this.canSelectObject = undefined;
+        this.canSelectObjectIndex = undefined;
     }
     /************************************** */
     private async _saveZone() {
@@ -421,21 +450,25 @@ export class ZoneParserClass {
             x,
             y,
             z,
-            type: values['obj_type_select'] ?? 'wall',
+            objectName: values['obj_type_select'] ?? undefined,
             texture: values['obj_texture_select'] ?? undefined,
             scaleX: this.createObjectPlaceholder.scale.x,
             scaleY: this.createObjectPlaceholder.scale.y,
             scaleZ: this.createObjectPlaceholder.scale.z,
         });
-        if (this.createObjectPlaceholder) {
-            this.createObjectPlaceholder.removeFromParent();
-            this.createObjectPlaceholder = undefined;
+        // =>if stop create object enabled
+        if (!values['multi_obj_create_check']) {
+            if (this.createObjectPlaceholder) {
+                this.createObjectPlaceholder.removeFromParent();
+                this.createObjectPlaceholder = undefined;
+            }
+            this.creatingObject = false;
         }
         // =>add to zone objects
         this.zone.objects.push(objInfo);
         // =>render object
         await this.objManage.renderObject(objInfo);
-        this.creatingObject = false;
+
         await this._saveZone();
 
 

@@ -96,6 +96,12 @@ export class ZoneScene extends THREE.Scene {
                     this.zone.setMode(this.mode);
                 }
             }
+            else if (event.shiftKey && event.key == 'D') {
+                this.mode = 'delete';
+                if (this.zone) {
+                    this.zone.setMode(this.mode);
+                }
+            }
             // console.log('mode:', this.mode)
         });
 

@@ -1,5 +1,5 @@
 
-# Fun Game on three.js (version 0.4)
+# Fun Game on three.js (version 0.5)
 
 **T**his is just a test game using typescript, three.js and webpack :)
 
@@ -20,9 +20,28 @@ then open `http://localhost:8800/` on your browser
 ![screenshot1](./docs/screenshot1.png)
 
 
-# game modes
+## game modes
 
-## view mode `shift+v`
+### view mode `shift+v`
+just view the zone!
 
+### edit mode `shift+e`
+select an object by cursor or search input, then show controls on target object to edit it:
+- `T key`: translate (move) object
+- `R key`: rotate object
+- `S key`: scale object
+- `+ key`: increase size of control
+- `- key`: decrease size of control
+
+> if you press `N key` you can use snap on your translate, rotate, scale actions
+### create mode `shift+c`
+select an object type from select box on top corner of window, then click on *create object* button and now you can add your object on the zone.
+### delete mode `shift+d`
+choose an object, can delete it!
+
+## main object types
+
+- wall
+- glass
 ## For Debug
 https://gist.github.com/wtho/8a8924481763dc671c67b8868e54b695

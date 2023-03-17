@@ -2,16 +2,28 @@ import { ZoneGlassObjectInfo, ZoneInfo, ZoneWallObjectInfo } from "./interfaces"
 import * as THREE from 'three';
 import { ZoneScene } from "./ZoneScene";
 import { ZoneObjectInfoType, ZoneObjectType } from "./types";
+import { stone_wall_v1 } from "./objects/stone_wall_v1";
+import { BaseObject } from "./objects/BaseObject";
+import { std_stone_wall } from "./objects/std_stone_wall";
+import { glass } from "./objects/glass";
 
 
 export class ObjectManagement {
     protected scene: ZoneScene;
     protected _objects: any[] = [];
-    protected _objectTypes: ZoneObjectType[] = ['wall', 'glass'];
-    protected _objectTextures: string[] = ['dark_wall_stone.jpg', 'light_wall_stone.jpg', 'sand_ground.jpg'];
+    protected _objectNames: { text: string; value: string }[] = [];
+    protected _objectClasses = [stone_wall_v1, std_stone_wall, glass];
     /************************************** */
     constructor(scene: ZoneScene) {
         this.scene = scene;
+        // =>init object names
+        for (const obj of this._objectClasses) {
+            this._objectNames.push({
+                text: obj.prototype.title,
+                value: obj.prototype['constructor']['name']
+            });
+            // console.log(obj.prototype.title)
+        }
     }
 
     /************************************** */
@@ -36,59 +48,77 @@ export class ObjectManagement {
         return zone;
     }
     /************************************** */
-    generateObjectInfo(options: { x: number, y: number, z: number, type: ZoneObjectType; texture?: string; scaleX?: number; scaleY?: number; scaleZ?: number; }) {
+    generateObjectInfo(options: { x: number, y: number, z: number, objectName: string; texture?: string; scaleX?: number; scaleY?: number; scaleZ?: number; }) {
+        // =>check if obj name is empty
+        if (!options.objectName) {
+            options.objectName = this._objectNames[0].value;
+        }
+        // =>find target object class
+        let objectClass = this._objectClasses[this.objectNames.findIndex(i => i.value === options.objectName)] as (typeof BaseObject);
+
         let info: ZoneObjectInfoType = {
+            objectName: options.objectName,
             x: options.x,
             y: options.y,
             z: options.z,
-            type: options.type,
+            type: objectClass.prototype.type,
             texture: options.texture,
             scaleX: options.scaleX ?? 1,
             scaleY: options.scaleY ?? 1,
             scaleZ: options.scaleZ ?? 1,
             name: this._generateName(),
         };
-        // =>if create wall
-        if (options.type === 'wall') {
-            if (!info.texture) info.texture = 'light_wall_stone.jpg';
-            if (!info.scaleZ) info.scaleZ = 1;
-        }
-        // =>if create glass
-        else if (options.type === 'glass') {
-            info.texture = undefined;
-            if (!info.scaleZ) info.scaleZ = 1;
-        }
-        //TODO:
+        let instance = new (objectClass as any)() as BaseObject;
+        info = instance.generateObjectInfo(info);
+        // // =>if create wall
+        // if (options.type === 'wall') {
+        //     if (!info.texture) info.texture = 'light_wall_stone.jpg';
+        //     if (!info.scaleZ) info.scaleZ = 1;
+        // }
+        // // =>if create glass
+        // else if (options.type === 'glass') {
+        //     info.texture = undefined;
+        //     if (!info.scaleZ) info.scaleZ = 1;
+        // }
+        // // =>if create floor
+        // if (options.type === 'floor') {
+        //     if (!info.texture) info.texture = 'parquet1.jpg';
+        //     if (!info.scaleZ) info.scaleZ = 1;
+        // }
 
         return info;
     }
     /************************************** */
     async renderObject(info: ZoneObjectInfoType) {
         if (!info.name) info.name = this._generateName();
-        // =>if wall type
-        if (info.type === 'wall') {
-            this._renderWall(info);
+        // =>find target object class
+        let objectClass = this._findObjectClassByName(info.objectName);
+        if (!objectClass) {
+            console.warn('can not find object class for render', info);
+            return;
         }
-        // =>if glass type
-        else if (info.type === 'glass') {
-            this._renderGlass(info);
-        }
-        //TODO:
+        let instance = new (objectClass as any)() as BaseObject;
+        let object = await instance.renderObject(info);
+        this._objects.push(object);
+        this.scene.add(object);
     }
     /************************************** */
-    generateObjectPlaceholder(zone: ZoneInfo, type: ZoneObjectType = 'wall') {
-        let objPlaceholder;
-        // =>if wall type
-        if (type === 'wall' || type == 'glass') {
-            const rollOverGeo = new THREE.BoxGeometry();
-            let rollOverMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.3, transparent: true });
-            objPlaceholder = new THREE.Mesh(rollOverGeo, rollOverMaterial);
-            objPlaceholder.scale.set(zone.meta.ground.minScaler, zone.meta.ground.minScaler, 1);
+    generateObjectPlaceholder(zone: ZoneInfo, objectName: string) {
+        // =>find target object class
+        let objectClass = this._findObjectClassByName(objectName);
+        if (!objectClass) {
+            console.warn('can not find object class for placeholder', objectName);
+            return undefined;
         }
-
-        //TODO:
-
+        let instance = new (objectClass as any)() as BaseObject;
+        let objPlaceholder = instance.generateObjectPlaceholder(zone, objectName);
         return objPlaceholder;
+    }
+    /************************************** */
+    removeObjectByIndex(index: number) {
+        if (this._objects.length < index + 1) return;
+        this._objects[index].removeFromParent();
+        this._objects.splice(index, 1);
     }
     /************************************** */
     /************************************** */
@@ -97,91 +127,22 @@ export class ObjectManagement {
         return this._objects;
     }
     /************************************** */
-    get objectTypes() {
-        return this._objectTypes;
-    }
-    /************************************** */
-    get objectTextures() {
-        return this._objectTextures;
+    get objectNames() {
+        return this._objectNames;
     }
     /************************************** */
     /************************************** */
     /************************************** */
-    protected _renderWall(wall: ZoneWallObjectInfo) {
-        const geometry = new THREE.BoxGeometry();
-        let tex: THREE.Texture;
-        if (wall.texture) {
-            tex = new THREE.TextureLoader().load(ObjectManagement.texturePath(wall.texture));
-            tex.anisotropy = 2
-            tex.repeat.set(wall.scaleX / 2, wall.scaleY / 2)
-            tex.wrapT = THREE.RepeatWrapping;
-            tex.wrapS = THREE.RepeatWrapping;
-        }
-        const material = new THREE.MeshPhongMaterial({
-            color: wall.color,
-            map: tex,
-            shininess: 1,
-        });
-        const cube = new THREE.Mesh(geometry, material);
-        cube.scale.set(wall.scaleX ?? 1, wall.scaleY ?? 1, wall.scaleZ ?? 1);
-        cube.position.set(wall.x ?? 0, wall.y ?? 0, wall.z ?? 1);
-        if (wall.rotateX) {
-            cube.rotation.x = wall.rotateX;
-        }
-        if (wall.rotateY) {
-            cube.rotation.y = wall.rotateY;
-        }
-        if (wall.rotateZ) {
-            cube.rotation.z = wall.rotateZ;
-        }
-        cube.name = wall.name ?? '';
-        cube.geometry.computeBoundingBox();
-        cube.updateMatrixWorld(true); // This might be necessary if box is moved
-        this._objects.push(cube);
-        this.scene.add(cube);
-        // console.log(cube)
 
-    }
-    /************************************** */
-    protected _renderGlass(glass: ZoneGlassObjectInfo) {
-        const geometry = new THREE.BoxGeometry();
-        let tex: THREE.Texture;
-        const material = new THREE.MeshPhysicalMaterial({
-            metalness: glass.metalness ?? 0.5,
-            roughness: .05,
-            envMapIntensity: 0.9,
-            clearcoat: 1,
-            transparent: true,
-            // transmission: .95,
-            opacity: .5,
-            reflectivity: 0.2,
-            // refractionRatio: 0.985,
-            ior: 0.9,
-            side: THREE.BackSide,
-        });
-        const cube = new THREE.Mesh(geometry, material);
-        cube.scale.set(glass.scaleX ?? 1, glass.scaleY ?? 1, glass.scaleZ ?? 1);
-        cube.position.set(glass.x ?? 0, glass.y ?? 0, glass.z ?? 1);
-        if (glass.rotateX) {
-            cube.rotation.x = glass.rotateX;
-        }
-        if (glass.rotateY) {
-            cube.rotation.y = glass.rotateY;
-        }
-        if (glass.rotateZ) {
-            cube.rotation.z = glass.rotateZ;
-        }
-        cube.name = glass.name ?? '';
-        cube.geometry.computeBoundingBox();
-        cube.updateMatrixWorld(true); // This might be necessary if box is moved
-        this._objects.push(cube);
-        this.scene.add(cube);
-        // console.log(cube)
 
-    }
     /************************************** */
     private _generateName() {
         return 'obj_' + Math.ceil(Math.random() * 100000) + '_' + Math.ceil(Math.random() * 100);
+    }
+    /************************************** */
+    private _findObjectClassByName(name: string) {
+        let objectClass = this._objectClasses.find(i => i.objectName(i) === name);
+        return objectClass;
     }
     /************************************** */
     /************************************** */

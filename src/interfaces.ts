@@ -27,6 +27,7 @@ export interface ZoneGlassObjectInfo extends ZoneObjectInfo {
     metalness?: number;
 }
 export interface ZoneObjectInfo {
+    objectName: string;
     type: ZoneObjectType;
     texture?: string;
     color?: string;

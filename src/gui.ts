@@ -3,11 +3,22 @@
 export class GameGUI {
     protected fields: GameGUIField[] = [];
     /************************************** */
-    addInput(id: string, placeholder?: string) {
+    addTextInput(id: string, placeholder?: string) {
         let input = document.createElement('input');
         input.placeholder = placeholder;
 
         return this._addElement(input, id);
+    }
+    /************************************** */
+    addCheckbox(id: string, text: string, checked = false) {
+        let input = document.createElement('input');
+        let div = document.createElement('div');
+        div.innerHTML = text;
+        div.appendChild(input);
+        input.type = 'checkbox';
+        input.checked = checked;
+
+        return this._addElement(div, id, 'checkbox');
     }
     /************************************** */
     addSelect(id: string, options: string[] | { value: string; text: string }[], text?: string) {
@@ -86,8 +97,8 @@ export class GameGUI {
     /************************************** */
     /************************************** */
     /************************************** */
-    private _addElement(element: HTMLElement, id: string) {
-        let field = new GameGUIField(element, id);
+    private _addElement(element: HTMLElement, id: string, tagName?: string) {
+        let field = new GameGUIField(element, id, tagName);
 
         this.fields.push(field);
 
@@ -103,11 +114,18 @@ export class GameGUIField {
     protected _element: HTMLElement;
     protected _id: string;
     protected _groupName: string;
-    constructor(element: HTMLElement, id: string) {
+    protected _tagName: string;
+    constructor(element: HTMLElement, id: string, tagName?: string) {
         this._element = element;
         this._id = id;
         this._element.id = id;
         document.body.append(this._element);
+        if (tagName) {
+            this._tagName = tagName;
+        } else {
+            this._tagName = this._element.tagName.toLowerCase();
+        }
+
         return this;
     }
     /************************************** */
@@ -161,14 +179,15 @@ export class GameGUIField {
     }
     /************************************** */
     value<T = string>(def: T = undefined): T {
-        let tagName = this._element.tagName.toLowerCase();
-        if (tagName === 'input') {
+        if (this._tagName === 'input') {
             return this._element['value'] ?? def;
         }
-        else if (tagName === 'select') {
+        else if (this._tagName === 'select') {
             let selectedOption = (this._element as HTMLSelectElement).options[this._element['selectedIndex']];
             if (selectedOption.disabled) return def;
             return selectedOption.value as T;
+        } else if (this._tagName === 'checkbox') {
+            return this._element.children[0]['checked'] ?? Boolean(def);
         }
 
         return def;

@@ -10,6 +10,34 @@ export class GameGUI {
         return this._addElement(input, id);
     }
     /************************************** */
+    addSelect(id: string, options: string[] | { value: string; text: string }[], text?: string) {
+        let select = document.createElement('select');
+        select.textContent = text;
+        if (text) {
+            let option = document.createElement('option');
+            option.text = text;
+            option.disabled = true;
+            option.selected = true;
+            select.appendChild(option);
+        }
+        for (const opt of options) {
+            let text = '';
+            let value = '';
+            if (typeof opt === 'string') {
+                text = value = opt;
+            } else {
+                text = opt.text;
+                value = opt.value;
+            }
+            let option = document.createElement('option');
+            option.value = value;
+            option.innerHTML = text;
+            select.appendChild(option);
+        }
+
+        return this._addElement(select, id);
+    }
+    /************************************** */
     addButton(id: string, text?: string) {
         let input = document.createElement('button');
         input.textContent = text;
@@ -31,12 +59,29 @@ export class GameGUI {
     }
     /************************************** */
     removeElementsByGroup(name: string) {
+        let isChanged = false;
+        while (true) {
+            isChanged = false;
+            for (let i = 0; i < this.fields.length; i++) {
+                if (this.fields[i]['_groupName'] === name) {
+                    isChanged = true;
+                    this.fields[i].remove();
+                    this.fields.splice(i, 1);
+                    break;
+                }
+            }
+            if (!isChanged) break;
+        }
+    }
+    /************************************** */
+    getFieldValuesByGroup(name: string) {
+        let values = {};
         for (let i = 0; i < this.fields.length; i++) {
             if (this.fields[i]['_groupName'] === name) {
-                this.fields[i].remove();
-                this.fields.splice(i, 1);
+                values[this.fields[i]['_id']] = this.fields[i].value();
             }
         }
+        return values;
     }
     /************************************** */
     /************************************** */
@@ -114,5 +159,18 @@ export class GameGUIField {
         this._groupName = name;
         return this;
     }
+    /************************************** */
+    value<T = string>(def: T = undefined): T {
+        let tagName = this._element.tagName.toLowerCase();
+        if (tagName === 'input') {
+            return this._element['value'] ?? def;
+        }
+        else if (tagName === 'select') {
+            let selectedOption = (this._element as HTMLSelectElement).options[this._element['selectedIndex']];
+            if (selectedOption.disabled) return def;
+            return selectedOption.value as T;
+        }
 
+        return def;
+    }
 }

@@ -1,5 +1,5 @@
 
-# Fun Game on three.js (version 0.2)
+# Fun Game on three.js (version 0.4)
 
 **T**his is just a test game using typescript, three.js and webpack :)
 
@@ -19,6 +19,10 @@ then open `http://localhost:8800/` on your browser
 
 ![screenshot1](./docs/screenshot1.png)
 
+
+# game modes
+
+## view mode `shift+v`
 
 ## For Debug
 https://gist.github.com/wtho/8a8924481763dc671c67b8868e54b695

@@ -130,8 +130,8 @@ export class ZoneScene extends THREE.Scene {
     }
     /************************************** */
     async _initCamera(debug = false) {
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000)
-        this.camera.position.set(25, 200, 25);
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 2, 1000)
+        this.camera.position.set(25, 50, 25);
         // for sky
         // this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 45, 3000000);
         // this.camera.position.set(-900, -200, -900);
@@ -156,9 +156,9 @@ export class ZoneScene extends THREE.Scene {
 
         this.controls.screenSpacePanning = false;
 
-        this.controls.minDistance = 1;
-        this.controls.maxDistance = 400;
-
+        this.controls.minDistance = 2;
+        this.controls.maxDistance = 100;
+        // this.controls.minZoom = 100;
         this.controls.maxPolarAngle = Math.PI / 2;
         // var centerPosition = this.controls.target.clone();
         // centerPosition.y = 0;

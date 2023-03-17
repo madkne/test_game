@@ -1,4 +1,4 @@
-import { ZoneObjectType } from "./types";
+import { ZoneObjectInfoType, ZoneObjectType } from "./types";
 
 
 export interface ZoneInfo {
@@ -7,17 +7,25 @@ export interface ZoneInfo {
             texture: string;
             width: number;
             height: number;
+            minScaler: number;
         };
         sky: {
             texture: string;
         }
     };
-    objects: (ZoneWallObjectInfo | ZoneObjectInfo)[];
+    objects: ZoneObjectInfoType[];
 }
 
 export interface ZoneWallObjectInfo extends ZoneObjectInfo {
 }
 
+export interface ZoneGlassObjectInfo extends ZoneObjectInfo {
+    /**
+     * between 0,1
+     * @default 0.5
+     */
+    metalness?: number;
+}
 export interface ZoneObjectInfo {
     type: ZoneObjectType;
     texture?: string;

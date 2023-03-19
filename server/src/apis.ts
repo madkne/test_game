@@ -18,3 +18,21 @@ export async function updateZone(request: Request, response: Response) {
 
     response.status(200).end();
 }
+
+
+export async function getChar(request: Request, response: Response) {
+    let charName = request.query['char'];
+    // =>read json file of char
+    let charFile = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'db', charName + '.json')).toString());
+
+    response.status(200).json(charFile);
+}
+
+export async function updateChar(request: Request, response: Response) {
+    let charName = request.body['name'];
+    let charInfo = request.body['zone'];
+    // =>write json file of zone
+    fs.writeFileSync(path.join(__dirname, '..', 'db', charName + '.json'), JSON.stringify(charInfo, null, 2));
+
+    response.status(200).end();
+}

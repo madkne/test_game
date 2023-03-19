@@ -4,7 +4,7 @@ import * as PATH from 'path';
 import * as FS from 'fs';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
-import { getZone, updateZone } from "./apis";
+import { getChar, getZone, updateChar, updateZone } from "./apis";
 
 const SERVER_PORT = 8800;
 
@@ -49,6 +49,22 @@ export class HttpWebServer {
          */
         this.server.put('/api/zone', (req, res) => {
             updateZone(req, res);
+        });
+        /**
+        * get char info 
+        * GET
+        * /api/char?char=char0
+        */
+        this.server.get('/api/char', (req, res) => {
+            getChar(req, res);
+        });
+        /**
+         * update char info 
+         * PUT
+         * /api/char?char=char0
+         */
+        this.server.put('/api/char', (req, res) => {
+            updateChar(req, res);
         });
     }
 

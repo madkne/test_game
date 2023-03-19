@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls, MapControls } from './jsm/controls/OrbitControls.js';
-import { GameMode } from './types.js';
+import { GameMode } from './types';
 
 import { ZoneParserClass } from './ZoneParser';
 import Stats from './jsm/libs/stats.module';
+import { GameData } from './data';
+import { CharParserClass } from './CharParser';
 
 export class ZoneScene extends THREE.Scene {
     // Setups a scene camera
@@ -16,6 +18,7 @@ export class ZoneScene extends THREE.Scene {
     mode: GameMode = 'view';
     modeHtmlElement: HTMLDivElement;
     zone: ZoneParserClass;
+    char: CharParserClass;
 
 
 
@@ -39,9 +42,13 @@ export class ZoneScene extends THREE.Scene {
         // this._initLighting();
 
         this.animate();
+
         // =>load zone
-        this.zone = new ZoneParserClass(this);
+        this.zone = new ZoneParserClass(this, GameData.zoneName, GameData.groundY);
         this.zone.init();
+        // =>load char
+        this.char = new CharParserClass(this, GameData.charName, GameData.groundY);
+
 
         let stats = Stats();
         stats.dom.style.left = 'unset';
@@ -68,6 +75,10 @@ export class ZoneScene extends THREE.Scene {
         }
         if (this.zone) {
             await this.zone.animate();
+        }
+
+        if (this.char) {
+            await this.char.animate();
         }
 
         this.modeHtmlElement.textContent = this.mode + ` (shift+${this.mode[0]})`;
@@ -106,38 +117,38 @@ export class ZoneScene extends THREE.Scene {
         });
 
     }
-    /************************************** */
-    async _initLighting() {
+    // /************************************** */
+    // async _initLighting() {
 
-        const sun = new THREE.DirectionalLight(0xffffcc)
-        sun.position.set(0, 1, 0)
-        this.add(sun)
-
-
-
-        // var dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        // dirLight.position.set(-1, 0.75, 1);
-        // dirLight.position.multiplyScalar(50);
-        // dirLight.name = "dirlight";
-        // dirLight.castShadow = true;
-
-        // this.add(dirLight);
+    //     const sun = new THREE.DirectionalLight(0xffffcc)
+    //     sun.position.set(0, 1, 0)
+    //     this.add(sun)
 
 
-        var dirLight1 = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight1.position.set(25, 10, 25);
-        dirLight1.position.multiplyScalar(50);
-        dirLight1.name = "dirlight1";
-        dirLight1.castShadow = true;
 
-        this.add(dirLight1);
+    //     // var dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    //     // dirLight.position.set(-1, 0.75, 1);
+    //     // dirLight.position.multiplyScalar(50);
+    //     // dirLight.name = "dirlight";
+    //     // dirLight.castShadow = true;
+
+    //     // this.add(dirLight);
 
 
-    }
+    //     var dirLight1 = new THREE.DirectionalLight(0xffffff, 1);
+    //     dirLight1.position.set(25, 10, 25);
+    //     dirLight1.position.multiplyScalar(50);
+    //     dirLight1.name = "dirlight1";
+    //     dirLight1.castShadow = true;
+
+    //     this.add(dirLight1);
+
+
+    // }
     /************************************** */
     async _initCamera(debug = false) {
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 2, 1000)
-        this.camera.position.set(25, 50, 25);
+        this.camera.position.set(25, 10, 25);
         // for sky
         // this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 45, 3000000);
         // this.camera.position.set(-900, -200, -900);
@@ -189,19 +200,19 @@ export class ZoneScene extends THREE.Scene {
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         }, false);
-        // window.onkeydown = (ev: KeyboardEvent) => {
-        //     console.log('key:', ev)
-        //     if (ev.key === 'ArrowUp') {
-        //         camera.position.y++;
-        //     }
-        //     else if (ev.key === 'ArrowDown') {
-        //         camera.position.y--;
-        //     }
-        //     else if (ev.key === '+') {
-        //         camera.zoom++;
-        //     } else if (ev.key === '-') {
-        //         camera.zoom--;
-        //     }
-        // };
+        window.onkeydown = (ev: KeyboardEvent) => {
+            // console.log('key:', ev)
+            if (ev.key === 'ArrowUp') {
+                this.camera.position.y++;
+            }
+            else if (ev.key === 'ArrowDown') {
+                this.camera.position.y--;
+            }
+            // else if (ev.key === '+') {
+            //     camera.zoom++;
+            // } else if (ev.key === '-') {
+            //     camera.zoom--;
+            // }
+        };
     }
 }

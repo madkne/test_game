@@ -1,4 +1,4 @@
-import { ZoneObjectInfoType, ZoneObjectType } from "./types";
+import { CharacterAnimationCollection, CharacterAnimationType, ZoneObjectInfoType, ZoneObjectType } from "./types";
 
 
 export interface ZoneInfo {
@@ -51,3 +51,23 @@ export interface ZoneObjectInfo {
 //     element: HTMLElement;
 //     id: string;
 // }
+
+
+
+export interface CharacterInfo {
+    model: string;
+    modelType?: 'fbx';
+    scale?: number;
+    x?: number;
+    y?: number;
+    /**
+     * @default 1
+     */
+    z?: number;
+    animations?: CharacterAnimationCollection;
+    /**
+     * Character movement speed coefficient
+     * @default 2
+     */
+    velocity?: number;
+}

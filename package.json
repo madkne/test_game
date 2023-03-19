@@ -31,7 +31,6 @@
         "cors": "^2.8.5",
         "dat.gui": "^0.7.9",
         "express": "^4.18.2",
-        "three": "^0.140.0",
-        "three-fbxloader-offical": "^1.0.0"
+        "three": "^0.140.0"
     }
 }

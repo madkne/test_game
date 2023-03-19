@@ -5,3 +5,8 @@ export type ZoneObjectType = 'wall' | 'glass' | 'floor';
 export type GameMode = 'view' | 'edit' | 'create' | 'delete';
 
 export type ZoneObjectInfoType = ZoneWallObjectInfo | ZoneObjectInfo;
+
+
+export type CharacterAnimationType = 'Idle' | 'Walking' | 'Run'; //TODO:
+
+export type CharacterAnimationCollection = { [k in CharacterAnimationType]?: string };

@@ -1,5 +1,5 @@
 
-# Fun Game on three.js (version 0.5)
+# Fun Game on three.js (version 0.6)
 
 **T**his is just a test game using typescript, three.js and webpack :)
 
@@ -18,7 +18,7 @@ then open `http://localhost:8800/` on your browser
 ## screenshots
 
 ![screenshot1](./docs/screenshot1.png)
-
+![screenshot2](./docs/screenshot2.png)
 
 ## game modes
 
@@ -43,5 +43,9 @@ choose an object, can delete it!
 
 - wall
 - glass
+
+## character controls
+
+use `W`, `S`, `A`, `D` keys to walk and you can press `Shift` key to run.
 ## For Debug
 https://gist.github.com/wtho/8a8924481763dc671c67b8868e54b695

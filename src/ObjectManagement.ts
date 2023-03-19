@@ -48,7 +48,7 @@ export class ObjectManagement {
         return zone;
     }
     /************************************** */
-    generateObjectInfo(options: { x: number, y: number, z: number, objectName: string; texture?: string; scaleX?: number; scaleY?: number; scaleZ?: number; }) {
+    generateObjectInfo(options: { x: number, y: number, z: number, objectName: string; texture?: string; scaleX?: number; scaleY?: number; scaleZ?: number; rotateX?: number; rotateY?: number; rotateZ?: number; }) {
         // =>check if obj name is empty
         if (!options.objectName) {
             options.objectName = this._objectNames[0].value;
@@ -66,6 +66,9 @@ export class ObjectManagement {
             scaleX: options.scaleX ?? 1,
             scaleY: options.scaleY ?? 1,
             scaleZ: options.scaleZ ?? 1,
+            rotateX: options.rotateX ?? 0,
+            rotateY: options.rotateY ?? 0,
+            rotateZ: options.rotateZ ?? 0,
             name: this._generateName(),
         };
         let instance = new (objectClass as any)() as BaseObject;

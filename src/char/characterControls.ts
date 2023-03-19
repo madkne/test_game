@@ -102,7 +102,9 @@ export class CharacterControls {
             // console.log('char move:', moveX, moveZ, this.walkDirection);
             this.parser.model.position.x += moveX
             this.parser.model.position.z += moveZ
-            this.updateCameraTarget(moveX, moveZ)
+            this.updateCameraTarget(moveX, moveZ);
+
+            this.parser.needSaveState();
         }
     }
     /************************************** */

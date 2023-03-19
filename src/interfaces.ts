@@ -70,4 +70,9 @@ export interface CharacterInfo {
      * @default 2
      */
     velocity?: number;
+    cameraX?: number;
+    cameraY?: number;
+    cameraZ?: number;
+    cameraZoom?: number;
+
 }

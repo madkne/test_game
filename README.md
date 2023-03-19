@@ -1,5 +1,5 @@
 
-# Fun Game on three.js (version 0.6)
+# Fun Game on three.js (version 0.7)
 
 **T**his is just a test game using typescript, three.js and webpack :)
 
@@ -36,6 +36,14 @@ select an object by cursor or search input, then show controls on target object 
 > if you press `N key` you can use snap on your translate, rotate, scale actions
 ### create mode `shift+c`
 select an object type from select box on top corner of window, then click on *create object* button and now you can add your object on the zone.
+
+you can use mouse wheel and press one of follow keys to rotate object:
+
+- `X key`: Rotate on the x-axis
+- `Y key`: Rotate on the y-axis
+- `Z key`: Rotate on the z-axis
+
+> default rotation value is 0.01, but if pressed `Shift key`, rotation value will be 0.5.
 ### delete mode `shift+d`
 choose an object, can delete it!
 

@@ -67,6 +67,9 @@ export class ZoneParserClass {
         this._resetSelectedObject();
         // =>remove create mode fields
         this.gui.removeElementsByGroup('create_mode');
+        // =>enable camera zoom
+        this.scene.controls.enableZoom = true;
+
         // =>disable grid
         if (this.gridHelper) {
             this.gridHelper.removeFromParent();
@@ -90,6 +93,8 @@ export class ZoneParserClass {
         }
         // =>if create mode
         else if (this.mode === 'create') {
+            // =>disable camera zoom
+            this.scene.controls.enableZoom = false;
             // =>create type select
             this.gui.addSelect('obj_type_select', this.objManage.objectNames, 'select object ').position({ top: '10px', 'left': '10px' }).setGroup('create_mode');
             // =>create type select
@@ -157,7 +162,7 @@ export class ZoneParserClass {
                 if (intersects.length > 0) {
                     const intersect = intersects[0];
                     this.createObjectPlaceholder.position.copy(intersect.point).add(intersect.face.normal);
-                    this.createObjectPlaceholder.position.divideScalar(this.squareMeterLength).floor().multiplyScalar(this.squareMeterLength).addScalar(this.squareMeterLength);
+                    this.createObjectPlaceholder.position.divideScalar(this.squareMeterLength).floor().multiplyScalar(this.squareMeterLength)//.addScalar(this.squareMeterLength);
 
                     this.scene.renderer.render(this.scene, this.scene.camera);
                 }
@@ -181,8 +186,12 @@ export class ZoneParserClass {
                 this.scene.controls.enableRotate = true;
             }
             // =>if delete mode, select an object
-            if (this.mode === 'delete' && this.canSelectObject) {
+            if (this.mode === 'delete' && this.canSelectObject && e.button === 0) {
                 this._deleteObjectByIndex(this.canSelectObjectIndex);
+            }
+            // =>if cancel delete mode
+            if (this.mode === 'delete' && this.canSelectObject && e.button === 2) {
+                this._resetSelectedObject();
             }
             // =>if create mode to create a object
             else if (this.mode === 'create' && this.creatingObject && e.button === 0) {
@@ -196,7 +205,7 @@ export class ZoneParserClass {
                     // =>create sample object to find correct position
                     const newObjectSample = new THREE.Mesh(new BoxGeometry(), new MeshBasicMaterial());
                     newObjectSample.position.copy(intersect.point).add(intersect.face.normal);
-                    newObjectSample.position.divideScalar(this.squareMeterLength).floor().multiplyScalar(this.squareMeterLength).addScalar(this.squareMeterLength);
+                    newObjectSample.position.divideScalar(this.squareMeterLength).floor().multiplyScalar(this.squareMeterLength)//.addScalar(this.squareMeterLength);
                     // =>create new object
                     this._createObject(newObjectSample.position.x, newObjectSample.position.y, newObjectSample.position.z);
                 }
@@ -211,6 +220,28 @@ export class ZoneParserClass {
             }
         });
 
+        // =>listen on global mouse wheel
+        window.addEventListener('wheel', (event) => {
+            // =>if creating a object
+            if (this.mode === 'create' && this.creatingObject && this.createObjectPlaceholder) {
+                let rotationValue = ZoneScene.GameCaptureKeys.Shift ? 0.1 : 0.001;
+                // console.log(rotationValue)
+                // =>rotate in x-axis
+                if (ZoneScene.GameCaptureKeys.X) {
+                    this.createObjectPlaceholder.rotation.x += event.deltaY * rotationValue;
+                }
+                // =>rotate in y-axis
+                if (ZoneScene.GameCaptureKeys.Y) {
+                    this.createObjectPlaceholder.rotation.y += event.deltaY * rotationValue;
+                }
+                // =>rotate in z-axis
+                if (ZoneScene.GameCaptureKeys.Z) {
+                    this.createObjectPlaceholder.rotation.z += event.deltaY * rotationValue;
+                }
+                // console.log('wheel', event)
+            }
+        });
+        // 
     }
     /************************************** */
     protected initGround() {
@@ -266,12 +297,9 @@ export class ZoneParserClass {
 
 
         // const sunLight = new THREE.DirectionalLight(0xaabbff, 0.3);
-        const sunLight = new THREE.HemisphereLight(0xddeeff, 0x0f0e0d, 0.02);
-        sunLight.position.x = 0;
-        sunLight.position.y = 20;
-        sunLight.position.z = 0;
+        const sunLight = new THREE.HemisphereLight(0xddeeff, 0x0f0e0d, 0.01);
         // sunLight['power'] = 3500 // 3500 lm (300W)
-        sunLight.intensity = 3.0; // (City Twilight)
+        sunLight.intensity = 1.0; // (City Twilight)
         sunLight.castShadow = true;
         this.scene.add(sunLight);
         // this.scene.camera.add(sunLight);
@@ -426,6 +454,7 @@ export class ZoneParserClass {
 
         this.canSelectObject = undefined;
         this.canSelectObjectIndex = undefined;
+        this.mouseRaycaster = new THREE.Raycaster();
     }
     /************************************** */
     private async _saveZone() {
@@ -455,6 +484,9 @@ export class ZoneParserClass {
             scaleX: this.createObjectPlaceholder.scale.x,
             scaleY: this.createObjectPlaceholder.scale.y,
             scaleZ: this.createObjectPlaceholder.scale.z,
+            rotateX: this.createObjectPlaceholder.rotation.x,
+            rotateY: this.createObjectPlaceholder.rotation.y,
+            rotateZ: this.createObjectPlaceholder.rotation.z,
         });
         // =>if stop create object enabled
         if (!values['multi_obj_create_check']) {

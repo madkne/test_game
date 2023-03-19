@@ -1,15 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls, MapControls } from './jsm/controls/OrbitControls.js';
-import { GameMode } from './types';
+import { GameCaptureKeyType, GameMode } from './types';
 
 import { ZoneParserClass } from './ZoneParser';
 import Stats from './jsm/libs/stats.module';
 import { GameData } from './data';
 import { CharParserClass } from './CharParser';
+import { compareCameras } from './utils';
 
 export class ZoneScene extends THREE.Scene {
     // Setups a scene camera
     camera: THREE.PerspectiveCamera = null;
+    private _compareCamera: THREE.PerspectiveCamera = null;
     controls: OrbitControls;
     // setup renderer
     renderer: THREE.Renderer = null;
@@ -20,6 +22,7 @@ export class ZoneScene extends THREE.Scene {
     zone: ZoneParserClass;
     char: CharParserClass;
 
+    static GameCaptureKeys: { [k in GameCaptureKeyType]?: boolean } = {};
 
 
     /************************************** */
@@ -28,6 +31,7 @@ export class ZoneScene extends THREE.Scene {
     */
     initialize() {
         this._initWindowEvents();
+        this.captureGlobalKeys();
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
@@ -47,7 +51,7 @@ export class ZoneScene extends THREE.Scene {
         this.zone = new ZoneParserClass(this, GameData.zoneName, GameData.groundY);
         this.zone.init();
         // =>load char
-        this.char = new CharParserClass(this, GameData.charName, GameData.groundY);
+        this.char = new CharParserClass(this, GameData.charName, GameData.groundY, GameData.saveStateInterval);
 
 
         let stats = Stats();
@@ -82,6 +86,11 @@ export class ZoneScene extends THREE.Scene {
         }
 
         this.modeHtmlElement.textContent = this.mode + ` (shift+${this.mode[0]})`;
+        // =>detect changes of camera
+        if (!compareCameras(this.camera, this._compareCamera)) {
+            this.char.needSaveState();
+        }
+        this._compareCamera.copy(this.camera);
 
     }
     /************************************** */
@@ -117,34 +126,7 @@ export class ZoneScene extends THREE.Scene {
         });
 
     }
-    // /************************************** */
-    // async _initLighting() {
 
-    //     const sun = new THREE.DirectionalLight(0xffffcc)
-    //     sun.position.set(0, 1, 0)
-    //     this.add(sun)
-
-
-
-    //     // var dirLight = new THREE.DirectionalLight(0xffffff, 1);
-    //     // dirLight.position.set(-1, 0.75, 1);
-    //     // dirLight.position.multiplyScalar(50);
-    //     // dirLight.name = "dirlight";
-    //     // dirLight.castShadow = true;
-
-    //     // this.add(dirLight);
-
-
-    //     var dirLight1 = new THREE.DirectionalLight(0xffffff, 1);
-    //     dirLight1.position.set(25, 10, 25);
-    //     dirLight1.position.multiplyScalar(50);
-    //     dirLight1.name = "dirlight1";
-    //     dirLight1.castShadow = true;
-
-    //     this.add(dirLight1);
-
-
-    // }
     /************************************** */
     async _initCamera(debug = false) {
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 2, 1000)
@@ -156,6 +138,8 @@ export class ZoneScene extends THREE.Scene {
         this.renderer.render(this, this.camera);
         // add window resizing
         this.addWindowResizing();
+        this._compareCamera = this.camera.clone();
+
         // =>controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         // this.controls.minZoom = 300;
@@ -200,19 +184,72 @@ export class ZoneScene extends THREE.Scene {
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         }, false);
-        window.onkeydown = (ev: KeyboardEvent) => {
-            // console.log('key:', ev)
-            if (ev.key === 'ArrowUp') {
-                this.camera.position.y++;
+        // window.onkeydown = (ev: KeyboardEvent) => {
+        //     // console.log('key:', ev)
+        //     if (ev.key === 'ArrowUp') {
+        //         this.camera.position.y++;
+        //     }
+        //     else if (ev.key === 'ArrowDown') {
+        //         this.camera.position.y--;
+        //     }
+        //     // else if (ev.key === '+') {
+        //     //     camera.zoom++;
+        //     // } else if (ev.key === '-') {
+        //     //     camera.zoom--;
+        //     // }
+        // };
+    }
+    /************************************** */
+    captureGlobalKeys() {
+        window.addEventListener('keydown', (event) => {
+            if (event.shiftKey || event.key === 'Shift') {
+                ZoneScene.GameCaptureKeys.Shift = true;
             }
-            else if (ev.key === 'ArrowDown') {
-                this.camera.position.y--;
+            if (event.ctrlKey || event.key === 'Ctrl') {
+                ZoneScene.GameCaptureKeys.Ctrl = true;
             }
-            // else if (ev.key === '+') {
-            //     camera.zoom++;
-            // } else if (ev.key === '-') {
-            //     camera.zoom--;
-            // }
-        };
+            if (event.altKey || event.key === 'Alt') {
+                ZoneScene.GameCaptureKeys.Alt = true;
+            }
+            if (event.key) {
+                switch (event.key.toLowerCase()) {
+                    case 'x':
+                        ZoneScene.GameCaptureKeys.X = true;
+                        break;
+                    case 'y':
+                        ZoneScene.GameCaptureKeys.Y = true;
+                        break;
+                    case 'z':
+                        ZoneScene.GameCaptureKeys.Z = true;
+                        break;
+                }
+            }
+
+        });
+
+        window.addEventListener('keyup', (event) => {
+            if (event.shiftKey || event.key === 'Shift') {
+                ZoneScene.GameCaptureKeys.Shift = false;
+            }
+            if (event.ctrlKey || event.key === 'Ctrl') {
+                ZoneScene.GameCaptureKeys.Ctrl = false;
+            }
+            if (event.altKey || event.key === 'Alt') {
+                ZoneScene.GameCaptureKeys.Alt = false;
+            }
+            if (event.key) {
+                switch (event.key.toLowerCase()) {
+                    case 'x':
+                        ZoneScene.GameCaptureKeys.X = false;
+                        break;
+                    case 'y':
+                        ZoneScene.GameCaptureKeys.Y = false;
+                        break;
+                    case 'z':
+                        ZoneScene.GameCaptureKeys.Z = false;
+                        break;
+                }
+            }
+        });
     }
 }

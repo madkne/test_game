@@ -48,3 +48,10 @@ export function checkPointInBox(pt: THREE.Vector3, cube, boxDim?) {
     if (localPt.z < -5) localPt.z = -1;
     return cube.geometry.boundingBox.containsPoint(localPt);
 }
+
+export function compareCameras(camera1: THREE.PerspectiveCamera, camera2: THREE.PerspectiveCamera) {
+    if (!camera1.position.equals(camera2.position)) return false;
+    if (camera1.zoom !== camera2.zoom) return false;
+
+    return true;
+}

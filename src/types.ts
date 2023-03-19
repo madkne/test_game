@@ -10,3 +10,5 @@ export type ZoneObjectInfoType = ZoneWallObjectInfo | ZoneObjectInfo;
 export type CharacterAnimationType = 'Idle' | 'Walking' | 'Run'; //TODO:
 
 export type CharacterAnimationCollection = { [k in CharacterAnimationType]?: string };
+
+export type GameCaptureKeyType = 'Ctrl' | 'Shift' | 'Alt' | 'X' | 'Y' | 'Z';

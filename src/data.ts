@@ -11,4 +11,11 @@ export class GameData {
     static get charName() {
         return 'char0';
     }
+
+    /**
+     * in seconds
+     */
+    static get saveStateInterval() {
+        return 5;
+    }
 }

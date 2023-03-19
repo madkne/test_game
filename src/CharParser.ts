@@ -18,21 +18,27 @@ export class CharParserClass {
     protected charName: string;
     protected char: CharacterInfo;
     protected clock: THREE.Clock;
+    protected _needSaveState = false;
 
 
     protected characterControls: CharacterControls;
 
     /************************************** */
-    constructor(scene: ZoneScene, charName = 'char0', groundY = -5) {
+    constructor(scene: ZoneScene, charName = 'char0', groundY = -5, saveStateInterval = 5) {
         this.scene = scene;
         this.charName = charName;
         this.groundY = groundY;
         this.clock = new THREE.Clock();
         this.init();
+        setInterval(() => {
+            if (!this._needSaveState) return;
+            this.saveCharState();
+        }, saveStateInterval * 1000);
     }
     /************************************** */
     async init() {
         await this.fetchCharInfo();
+        this.configureCamera();
         await this.loadModel();
         this.characterControls = new CharacterControls(this, 'Idle', this.char.velocity);
 
@@ -40,6 +46,10 @@ export class CharParserClass {
     /************************************** */
     get model() {
         return this.targetObject;
+    }
+    /************************************** */
+    needSaveState() {
+        this._needSaveState = true;
     }
     /************************************** */
     async animate() {
@@ -101,6 +111,40 @@ export class CharParserClass {
     }
     /************************************** */
     /************************************** */
+    /************************************** */
+    private configureCamera() {
+        // config camera
+        if (this.char.cameraX) {
+            this.scene.camera.position.x = this.char.cameraX;
+        }
+        if (this.char.cameraY) {
+            this.scene.camera.position.y = this.char.cameraY;
+        }
+        if (this.char.cameraZ) {
+            this.scene.camera.position.z = this.char.cameraZ;
+        }
+        if (this.char.cameraZoom) {
+            this.scene.camera.zoom = this.char.cameraZoom;
+        }
+    }
+    /************************************** */
+    private async saveCharState() {
+        let res = await axios.put('/api/char', {
+            name: this.charName,
+            char: {
+                x: this.targetObject.position.x,
+                y: this.targetObject.position.y,
+                z: this.targetObject.position.z,
+                cameraX: this.scene.camera.position.x,
+                cameraY: this.scene.camera.position.y,
+                cameraZ: this.scene.camera.position.z,
+                cameraZoom: this.scene.camera.zoom,
+            }
+        });
+        if (res?.status === 200) {
+            this._needSaveState = false;
+        }
+    }
     /************************************** */
     private loadCharAllAnimationKeys() {
         const defaultAnimationKeys: CharacterAnimationCollection = {

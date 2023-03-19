@@ -30,7 +30,14 @@ export async function getChar(request: Request, response: Response) {
 
 export async function updateChar(request: Request, response: Response) {
     let charName = request.body['name'];
-    let charInfo = request.body['zone'];
+    let extraInfo = request.body['char'];
+    // =>read json file of char
+    let charInfo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'db', charName + '.json')).toString());
+    if (extraInfo && Object.keys(extraInfo).length > 0) {
+        for (const key in extraInfo) {
+            charInfo[key] = extraInfo[key];
+        }
+    }
     // =>write json file of zone
     fs.writeFileSync(path.join(__dirname, '..', 'db', charName + '.json'), JSON.stringify(charInfo, null, 2));
 
